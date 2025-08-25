@@ -290,3 +290,4 @@ Make it appropriate for {target_difficulty} learners while maintaining accuracy.
             'gemini_available': GEMINI_AVAILABLE
         }
 
+
