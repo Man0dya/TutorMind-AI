@@ -1,25 +1,23 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
   }
 
-  // Helper method to get auth headers
-  getAuthHeaders() {
-    const token = localStorage.getItem('authToken');
-    return {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
-    };
-  }
-
-  // Generic request method
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    
+    // Get auth token from localStorage
+    const token = localStorage.getItem('authToken');
+    
     const config = {
-      headers: this.getAuthHeaders(),
-      ...options
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+      ...options,
     };
 
     try {
@@ -29,7 +27,7 @@ class ApiService {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
-
+      
       return await response.json();
     } catch (error) {
       console.error('API request failed:', error);
@@ -37,18 +35,18 @@ class ApiService {
     }
   }
 
-  // Authentication methods
+  // Authentication endpoints
   async register(userData) {
     return this.request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(userData)
+      body: JSON.stringify(userData),
     });
   }
 
   async login(credentials) {
     return this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(credentials)
+      body: JSON.stringify(credentials),
     });
   }
 
@@ -58,16 +56,54 @@ class ApiService {
 
   async logout() {
     return this.request('/auth/logout', {
-      method: 'POST'
+      method: 'POST',
+    });
+  }
+
+  // Content generation endpoints
+  async generateContent(contentData) {
+    return this.request('/content/generate', {
+      method: 'POST',
+      body: JSON.stringify(contentData),
+    });
+  }
+
+  async getContentHistory(limit = 20) {
+    return this.request(`/content/history?limit=${limit}`);
+  }
+
+  async getContentById(contentId) {
+    return this.request(`/content/${contentId}`);
+  }
+
+  async updateContent(contentId, updateData) {
+    return this.request(`/content/${contentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async deleteContent(contentId) {
+    return this.request(`/content/${contentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async regenerateContent(contentId) {
+    return this.request(`/content/${contentId}/regenerate`, {
+      method: 'POST',
     });
   }
 
   // Health check
   async healthCheck() {
-    return this.request('/health');
+    try {
+      const response = await fetch(`${this.baseURL.replace('/api/v1', '')}/health`);
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
   }
 }
 
-// Create and export a single instance
-const apiService = new ApiService();
-export default apiService;
+export default new ApiService();
