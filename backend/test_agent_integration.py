@@ -214,3 +214,4 @@ if __name__ == "__main__":
         print("   - Network connectivity issues")
         print("   - Missing dependencies (run: pip install google-generativeai)")
         sys.exit(1)
+

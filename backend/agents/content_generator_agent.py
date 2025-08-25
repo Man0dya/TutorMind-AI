@@ -289,3 +289,4 @@ Make it appropriate for {target_difficulty} learners while maintaining accuracy.
             'api_key_configured': self.api_key is not None,
             'gemini_available': GEMINI_AVAILABLE
         }
+
