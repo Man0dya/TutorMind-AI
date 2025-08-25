@@ -4,6 +4,9 @@ from app.models.user import UserCreate, UserLogin, UserResponse, Token
 from app.services.user_service import UserService
 from app.utils.security import verify_token
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
@@ -36,11 +39,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 async def register(user: UserCreate):
     """Register a new user."""
     try:
+        logger.info(f"🔄 Attempting to register user: {user.email}")
         user_service = UserService()
         new_user = await user_service.create_user(user)
+        logger.info(f"✅ User created successfully: {new_user.email}")
         
         # Create access token
         access_token = user_service.create_user_token(new_user)
+        logger.info(f"🔑 JWT token created for user: {new_user.email}")
         
         return Token(
             access_token=access_token,
@@ -48,40 +54,54 @@ async def register(user: UserCreate):
             user=new_user
         )
     except ValueError as e:
+        logger.warning(f"❌ Validation error during registration: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
+        logger.error(f"💥 Unexpected error during registration: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail=f"Internal server error: {str(e)}"
         )
 
 @router.post("/login", response_model=Token)
 async def login(user_credentials: UserLogin):
     """Authenticate user and return JWT token."""
-    user_service = UserService()
-    user = await user_service.authenticate_user(
-        user_credentials.email, 
-        user_credentials.password
-    )
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        logger.info(f"🔐 Attempting login for user: {user_credentials.email}")
+        user_service = UserService()
+        user = await user_service.authenticate_user(
+            user_credentials.email, 
+            user_credentials.password
         )
-    
-    # Create access token
-    access_token = user_service.create_user_token(user)
-    
-    return Token(
-        access_token=access_token,
-        token_type="bearer",
-        user=user
-    )
+        
+        if not user:
+            logger.warning(f"❌ Login failed for user: {user_credentials.email}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Create access token
+        access_token = user_service.create_user_token(user)
+        logger.info(f"✅ Login successful for user: {user.email}")
+        
+        return Token(
+            access_token=access_token,
+            token_type="bearer",
+            user=user
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"💥 Unexpected error during login: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during login"
+        )
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: UserResponse = Depends(get_current_user)):
