@@ -1,0 +1,6 @@
+# Google Generative AI for Gemini integration
+google-generativeai>=0.8.0
+
+# Additional dependencies for agents
+asyncio
+typing-extensions
