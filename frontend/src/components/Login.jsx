@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { EyeIcon, EyeSlashIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, AcademicCapIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import apiService from '../services/api';
 
 const Login = ({ onLogin }) => {
@@ -11,6 +11,7 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [emailValid, setEmailValid] = useState(null);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -26,6 +27,15 @@ const Login = ({ onLogin }) => {
         [name]: ''
       }));
     }
+
+    // Update email validation in real-time
+    if (name === 'email') {
+      if (value.length === 0) {
+        setEmailValid(null);
+      } else {
+        setEmailValid(/\S+@\S+\.\S+/.test(value));
+      }
+    }
   };
 
   const validateForm = () => {
@@ -34,13 +44,11 @@ const Login = ({ onLogin }) => {
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = 'Please enter a valid email address';
     }
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -110,21 +118,38 @@ const Login = ({ onLogin }) => {
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email address
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className={`appearance-none relative block w-full px-3 py-3 border ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                placeholder="Enter your email"
-              />
+              <div className="relative">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`appearance-none relative block w-full px-3 py-3 pr-10 border ${
+                    errors.email ? 'border-red-300' : 
+                    emailValid === true ? 'border-green-300' : 
+                    emailValid === false ? 'border-red-300' : 'border-gray-300'
+                  } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                  placeholder="Enter your email"
+                />
+                {emailValid === true && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <CheckIcon className="h-5 w-5 text-green-500" />
+                  </div>
+                )}
+                {emailValid === false && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <XMarkIcon className="h-5 w-5 text-red-500" />
+                  </div>
+                )}
+              </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+              {emailValid === true && (
+                <p className="mt-1 text-sm text-green-600">✓ Valid email address</p>
               )}
             </div>
 
@@ -148,13 +173,13 @@ const Login = ({ onLogin }) => {
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center z-20"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 text-gray-400" />
+                    <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   ) : (
-                    <EyeIcon className="h-5 w-5 text-gray-400" />
+                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   )}
                 </button>
               </div>
